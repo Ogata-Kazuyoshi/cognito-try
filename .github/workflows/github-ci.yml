@@ -1,0 +1,123 @@
+# name: Sync to CodeCommit
+
+# on:
+#   push:
+#     branches:
+#       - main # 監視するブランチを指定
+
+# permissions:
+#   id-token: write
+#   contents: read
+
+# jobs:
+#   sync:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Git clone the repository # リポジトリの内容をクローン。後続でアクセスできるようになる。 fetch-depth:0は完全なクローンを意味する
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+
+#       - name: configure aws credentials # 認証認可のための部分。role-to-assumeで認証後に引き受けるIAMロールが指定される
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+#           aws-region: ${{ vars.AWS_REGION }}
+
+#       - name: Configure git to use AWS CodeCommit credentials
+#         run: |
+#           git config --global credential.helper '!aws codecommit credential-helper $@'
+#           git config --global credential.UseHttpPath true
+
+#       - name: Add CodeCommit remote
+#         run: |
+#           git remote add codecommit https://git-codecommit.${{ vars.AWS_REGION }}.amazonaws.com/v1/repos/${{ vars.AWS_CODECOMMIT }}
+
+#       - name: push to CodeCommit
+#         run: |
+#           git push codecommit main
+
+name: Build and Deploy to ECS
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: latest
+        run: |
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/${{ vars.AWS_ECR_REPOSITORY }}:$IMAGE_TAG -f Dockerfile .
+          docker push $ECR_REGISTRY/${{ vars.AWS_ECR_REPOSITORY }}:$IMAGE_TAG
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Register new task definition
+        id: task-def
+        run: |
+          set -e
+          echo "Updating task definition with new image URI..."
+          NEW_TASK_DEF=$(cat .github/workflows/new-task-def.json | jq --arg IMAGE_URI "${{ vars.AWS_ECR_DOMAIN }}/${{ vars.AWS_ECR_REPOSITORY }}:latest" \
+            --arg LOG_GROUP "/ecs/ogata-dummy-container" \
+            --arg LOG_STREAM_PREFIX "ecs" \
+            --arg EXECUTION_ROLE_ARN "${{ vars.AWS_EXISTING_ECS_TASK_ROLE_ARN }}" \
+            '.containerDefinitions[0].image=$IMAGE_URI | .containerDefinitions[0].logConfiguration.options["awslogs-group"]=$LOG_GROUP | .executionRoleArn=$EXECUTION_ROLE_ARN')
+          echo $NEW_TASK_DEF > new-task-def.json
+          echo "Registering new task definition..."
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json | jq -r '.taskDefinition.taskDefinitionArn')
+          echo "::set-output name=NEW_TASK_DEF_ARN::$NEW_TASK_DEF_ARN"
+          echo "New task definition registered successfully."
+          cat new-task-def.json  # デバッグ用に追加
+
+      - name: Deploy to ECS
+        env:
+          CLUSTER_NAME: ogata-cloudformation-cluster # ここをあなたのECSクラスター名に変更
+          SERVICE_NAME: ogata-cloudformation-service # ここをあなたのECSサービス名に変更
+        run: |
+          aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition ${{ steps.task-def.outputs.NEW_TASK_DEF_ARN }} --force-new-deployment --region ${{ vars.AWS_REGION }} --desired-count 1
+
+      - name: Wait for ECS service stability
+        env:
+         CLUSTER_NAME: ogata-cloudformation-cluster
+         SERVICE_NAME: ogata-cloudformation-service
+        run: |
+         echo "Waiting for ECS service to stabilize..."
+         aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME --region ${{ vars.AWS_REGION }}
+         echo "ECS service is stable."

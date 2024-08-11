@@ -1,0 +1,47 @@
+{
+  "family": "ogata-dummy-task-family",
+  "containerDefinitions": [
+    {
+      "name": "ogata-dummy-container",
+      "image": "temporary",
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ogata-dummy-container",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "secrets": [
+        {
+          "name": "POSTGRES_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:398649269234:secret:ogata-cloudformation-master-credentials-p6Q3TC:username::"
+        },
+        {
+          "name": "POSTGRES_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:398649269234:secret:ogata-cloudformation-master-credentials-p6Q3TC:password::"
+        },
+        {
+          "name": "POSTGRES_URL",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:398649269234:secret:ogata-cloudformation-master-credentials-p6Q3TC:POSTGRES_URL::"
+        },
+        {
+          "name": "SPRING_PROFILES_ACTIVE",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:398649269234:secret:ogata-cloudformation-master-credentials-p6Q3TC:SPRING_PROFILES_ACTIVE::"
+        }
+      ]
+    }
+  ],
+  "executionRoleArn": "arn:aws:iam::398649269234:role/ogata-ecs-task-execution-role",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "512",
+  "memory": "1024"
+}

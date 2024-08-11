@@ -1,0 +1,232 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  SubnetId1:
+    Type: String
+  SubnetId2:
+    Type: String
+  SubnetPrivateId1:
+    Type: String
+  SubnetPrivateId2:
+    Type: String
+  VpcId:
+    Type: String
+  ExistingECSTaskRoleArn:
+    Type: String
+  ECRImage:
+    Type: String
+  ECRRepositoryName:
+    Type: String
+  HostedZoneId:
+    Type: String
+  DomainName:
+    Type: String
+
+Resources:
+  ALB:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Name: ogata-cloudformation-alb
+      Subnets:
+        - !Ref SubnetId1
+        - !Ref SubnetId2
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+
+  ALBTargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Name: ogata-cloudformation-alb-tg
+      VpcId: !Ref VpcId
+      Port: 8080 # 変更: 80 -> 8080
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: '8080' # 変更: '80' -> '8080'
+      HealthCheckPath: '/'
+      HealthCheckIntervalSeconds: 30 # 変更: デフォルト値 -> 30秒
+      HealthCheckTimeoutSeconds: 10 # 変更: デフォルト値 -> 10秒
+      HealthyThresholdCount: 3 # 変更: デフォルト値 -> 3回
+      UnhealthyThresholdCount: 3 # 変更: デフォルト値 -> 3回
+      Matcher:
+        HttpCode: '200'
+    DependsOn: ALB
+
+  ALBListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref ALB
+      Port: 80
+      Protocol: HTTP
+    DependsOn: ALBTargetGroup
+
+  Route53RecordSet:
+    Type: 'AWS::Route53::RecordSet'
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ALB.DNSName
+        HostedZoneId: !GetAtt ALB.CanonicalHostedZoneID
+
+  ALBSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      Name: ogata-cloudformation-for-alb-sg
+      GroupDescription: 'Allow HTTP traffic'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 13.114.22.14/32
+
+  ECSCluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName: ogata-cloudformation-cluster
+
+  LogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: '/ecs/ogata-dummy-container'
+      RetentionInDays: 7
+
+  ECSTaskExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: ogata-ecs-task-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretsManagerAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref CloudformationSecret
+  #      Policies:
+  #        - PolicyName: SecretsManagerAccessPolicy
+  #          PolicyDocument:
+  #            Version: '2012-10-17'
+  #            Statement:
+  #              - Effect: Allow
+  #                Action:
+  #                  - secretsmanager:GetSecretValue
+  #                Resource: !Ref MasterUserPassword
+
+  ECSTaskDefinition:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      Family: 'ogata-dummy-task-family'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '512'
+      Memory: '1024'
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
+      ContainerDefinitions:
+        - Name: 'ogata-dummy-container'
+          Image: 'nginx:latest'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8080
+              HostPort: 8080
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: ecs
+          Command:
+            [
+              '/bin/sh',
+              '-c',
+              'echo "$NGINX_CONF" > /etc/nginx/nginx.conf && nginx -g ''daemon off;''',
+            ]
+          Environment:
+            - Name: NGINX_CONF
+              Value: |
+                events { }
+                http {
+                    server {
+                        listen 8080;
+                        location / {
+                            root /usr/share/nginx/html;
+                            index index.html index.htm;
+                        }
+                    }
+                }
+
+  ECSService:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      ServiceName: ogata-cloudformation-service
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref SubnetPrivateId2
+          SecurityGroups:
+            - !Ref ECSSecurityGroup
+      LoadBalancers:
+        - ContainerName: 'ogata-dummy-container'
+          ContainerPort: 8080 # 変更: 80 -> 8080
+          TargetGroupArn: !Ref ALBTargetGroup
+      TaskDefinition: !Ref ECSTaskDefinition
+    DependsOn:
+      - ALBListener
+      - LogGroup
+
+  ECSSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      Name: ogata-cloudformation-for-ecs-sg
+      GroupDescription: 'Allow traffic from ALB'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080 # 変更: 80 -> 8080
+          ToPort: 8080 # 変更: 80 -> 8080
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+
+  ECRRepository:
+    Type: 'AWS::ECR::Repository'
+    Properties:
+      RepositoryName: !Ref ECRRepositoryName
+
+  CloudformationSecret:
+    Type: 'AWS::SecretsManager::Secret'
+    Properties:
+      Name: ogata-cloudformation-secret
+      Description: 'Secret for Ogata CloudFormation project'
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "admin"}'
+        GenerateStringKey: 'password'
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+Outputs:
+  CloudformationSecretArn:
+    Description: 'ARN of the Ogata CloudFormation Secret'
+    Value: !Ref CloudformationSecret
+    Export:
+      Name: CloudformationSecretArn
+#  MasterUserPasswordArn:
+#    Value: !Ref MasterUserPassword
+#    Export:
+#      Name: MasterUserPasswordArn

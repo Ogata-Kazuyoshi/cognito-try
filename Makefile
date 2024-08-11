@@ -90,3 +90,13 @@ iac-update:
 	             ParameterKey=ECRRepositoryName,ParameterValue=$(ECR_REPOSITORY_NAME) \
 	             ParameterKey=HostedZoneId,ParameterValue=$(HOSTED_ZONE_ID) \
 	             ParameterKey=DomainName,ParameterValue=$(DOMAIN_NAME) \
+
+iac-cognito-deploy:
+	aws cloudformation create-stack --stack-name ogata-cloudformation-cognito \
+	--template-body file://cloudformation/cloudformation-cognito.yml \
+	--capabilities CAPABILITY_NAMED_IAM \
+
+iac-cognito-update:
+	aws cloudformation update-stack --stack-name ogata-cloudformation-cognito \
+	--template-body file://cloudformation/cloudformation-cognito.yml \
+	--capabilities CAPABILITY_NAMED_IAM \

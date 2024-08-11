@@ -25,6 +25,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
 	implementation("org.postgresql:postgresql:42.6.1")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("com.amazonaws:aws-java-sdk-s3:1.12.583")
@@ -32,6 +34,7 @@ dependencies {
 	runtimeOnly("com.h2database:h2")
 	testImplementation("io.mockk:mockk:1.13.7")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.security:spring-security-test")
 }
 
 tasks.withType<KotlinCompile> {

@@ -27,6 +27,22 @@
         {
           "name": "POSTGRES_PASSWORD",
           "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:157094121738:secret:ogata-cloudformation-secret-v8jgfk:password::"
+        },
+        {
+          "name": "SPRING_PROFILES_ACTIVE",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:157094121738:secret:ogata-cloudformation-secret-v8jgfk:SPRING_PROFILES_ACTIVE::"
+        },
+        {
+          "name": "CLIENT_ID",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:157094121738:secret:ogata-cloudformation-secret-v8jgfk:CLIENT_ID::"
+        },
+        {
+          "name": "CLIENT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:157094121738:secret:ogata-cloudformation-secret-v8jgfk:CLIENT_SECRET::"
+        },
+        {
+          "name": "COGNITO_DOMAIN",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:157094121738:secret:ogata-cloudformation-secret-v8jgfk:COGNITO_DOMAIN::"
         }
       ]
     }

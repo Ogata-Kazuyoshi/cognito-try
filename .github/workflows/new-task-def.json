@@ -22,24 +22,16 @@
       "secrets": [
         {
           "name": "POSTGRES_USERNAME",
-          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:398649269234:secret:ogata-cloudformation-master-credentials-p6Q3TC:username::"
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:157094121738:secret:ogata-cloudformation-secret-v8jgfk:username::"
         },
         {
           "name": "POSTGRES_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:398649269234:secret:ogata-cloudformation-master-credentials-p6Q3TC:password::"
-        },
-        {
-          "name": "POSTGRES_URL",
-          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:398649269234:secret:ogata-cloudformation-master-credentials-p6Q3TC:POSTGRES_URL::"
-        },
-        {
-          "name": "SPRING_PROFILES_ACTIVE",
-          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:398649269234:secret:ogata-cloudformation-master-credentials-p6Q3TC:SPRING_PROFILES_ACTIVE::"
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:157094121738:secret:ogata-cloudformation-secret-v8jgfk:password::"
         }
       ]
     }
   ],
-  "executionRoleArn": "arn:aws:iam::398649269234:role/ogata-ecs-task-execution-role",
+  "executionRoleArn": "arn:aws:iam::157094121738:role/ogata-ecs-task-execution-role",
   "requiresCompatibilities": ["FARGATE"],
   "networkMode": "awsvpc",
   "cpu": "512",

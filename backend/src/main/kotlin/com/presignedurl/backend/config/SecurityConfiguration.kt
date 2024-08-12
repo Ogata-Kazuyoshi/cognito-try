@@ -25,6 +25,7 @@ class SecurityConfiguration(
                     .permitAll()
             }
             .oauth2Login {
+                println("ここまではきてる")
                 it.successHandler(successHandler)
             }
         return http.build()

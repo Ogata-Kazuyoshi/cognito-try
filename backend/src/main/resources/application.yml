@@ -6,14 +6,23 @@ spring:
           cognito:
             client-id: ${CLIENT_ID}
             client-secret: ${CLIENT_SECRET}
-            scope: openid
+            scope:
+              - openid
+              - email
+              - profile
             redirect-uri: "{baseUrl}/login/oauth2/code/cognito"
             authorization-grant-type: authorization_code
         provider:
           cognito:
-            issuer-uri: https://cognito-idp.ap-northeast-1.amazonaws.com/ap-northeast-1_15KmrsaZP
+            issuer-uri: https://cognito-idp.ap-northeast-1.amazonaws.com/${COGNITO_USERPOOL_ID}
             authorization-uri: ${COGNITO_DOMAIN}/oauth2/authorize
 
 environments:
   after-auth-redirect-url: "http://localhost:5173/"
   login-error-redirect-url: "http://localhost:5173/"
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.oauth2: DEBUG

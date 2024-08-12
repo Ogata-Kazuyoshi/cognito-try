@@ -20,6 +20,7 @@ class CustomOAuth2SuccessHandler(
         response: HttpServletResponse?,
         authentication: Authentication?,
     ) {
+        println("ここまではきてる2ss")
         val oAuth2AuthenticationToken = authentication as OAuth2AuthenticationToken
         val clientRegistrationId = oAuth2AuthenticationToken.authorizedClientRegistrationId
         val principal = authentication.principal as OAuth2User

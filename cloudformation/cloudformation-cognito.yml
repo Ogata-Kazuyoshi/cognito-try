@@ -49,8 +49,9 @@ Resources:
       UserPoolId: !Ref CognitoUserPool
       GenerateSecret: true
       ExplicitAuthFlows:
-        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
       CallbackURLs:
         - http://localhost:8080/login/oauth2/code/cognito
       AllowedOAuthFlows:

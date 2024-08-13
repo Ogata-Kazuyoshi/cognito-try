@@ -15,5 +15,5 @@ spring:
             authorization-uri: ${COGNITO_DOMAIN}/oauth2/authorize
 
 environments:
-  after-auth-redirect-url: "{baseUrl}/"
-  login-error-redirect-url: "{baseUrl}/"
+  after-auth-redirect-url: "https://ogata-cognito.handson.toro.toyota/"
+  login-error-redirect-url: "https://ogata-cognito.handson.toro.toyota/"

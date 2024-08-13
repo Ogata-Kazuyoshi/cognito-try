@@ -151,6 +151,11 @@ export CONTAINER_NAME=hogehoge
 # 備考
 
 - 先にACMで証明書発行が必要
+- - name: Deploy to S3
+    run: |
+    aws s3 sync frontend/build s3://あなたのバケット名 --delete
+- aws s3 syncコマンドを使用して、ビルドされたファイルをS3バケットに同期します。--deleteオプションにより、S3バケット内の古いファイルが削除されます。
+
 
 
 # 参考

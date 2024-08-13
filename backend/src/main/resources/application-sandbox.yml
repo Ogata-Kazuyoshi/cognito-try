@@ -7,7 +7,8 @@ spring:
             client-id: ${CLIENT_ID}
             client-secret: ${CLIENT_SECRET}
             scope: openid
-            redirect-uri: "https://ogata-cognito.handson.toro.toyota/login/oauth2/code/cognito"
+#            redirect-uri: "https://ogata-cognito.handson.toro.toyota/login/oauth2/code/cognito"
+            redirect-uri: "{baseUrl}/login/oauth2/code/cognito"
             authorization-grant-type: authorization_code
         provider:
           cognito:
@@ -15,5 +16,5 @@ spring:
             authorization-uri: ${COGNITO_DOMAIN}/oauth2/authorize
 
 environments:
-  after-auth-redirect-url: "https://ogata-cognito.handson.toro.toyota/"
-  login-error-redirect-url: "https://ogata-cognito.handson.toro.toyota/"
+  after-auth-redirect-url: "/"
+  login-error-redirect-url: "/"

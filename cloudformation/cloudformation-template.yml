@@ -20,6 +20,8 @@ Parameters:
     Type: String
   DomainName:
     Type: String
+  ACMCertificateArn:
+    Type: String
 
 Resources:
   ALB:
@@ -58,8 +60,10 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref ALBTargetGroup
       LoadBalancerArn: !Ref ALB
-      Port: 80
-      Protocol: HTTP
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref ACMCertificateArn
     DependsOn: ALBTargetGroup
 
   Route53RecordSet:
@@ -80,8 +84,8 @@ Resources:
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: 443
+          ToPort: 443
           CidrIp: 13.114.22.14/32
 
   ECSCluster:

@@ -6,6 +6,7 @@
 
 - [今回のシステム概要図](#今回のシステム概要図)
 - [cognitoの設定](#cognitoの設定)
+- [作業手順](#作業手順)
 - [備考](#備考)
 - [参考](#参考)
 </details>
@@ -76,8 +77,80 @@
 
 </details>
 
+# 作業手順
+
+<details>
+<summary> 1. cloudformation-baseをデプロイ</summary>
+
+- リージョンの設定と、アクセスキーの情報だけ環境変数で必要
+
+```zh
+export AWS_DEFAULT_REGION=ap-northeast-1
+```
+
+</details>
+
+<details>
+<summary> 2. 各種環境変数を設定</summary>
+
+- 実行ターミナルに下記の環境変数を設定
+
+```zh
+export AWS_DEFAULT_REGION=hogehoge
+export GITHUB_ACCOUNT=hogehoge
+export GITHUB_REPOSITORY=hogehoge
+export VPC_ID=1で作成したやつ
+export SUBNET_ID1=1で作成したやつ
+export SUBNET_ID2=1で作成したやつ
+export SUBNET_PRIVATE_ID1=1で作成したやつ
+export SUBNET_PRIVATE_ID2=1で作成したやつ
+export EXISTING_ECS_TASK_ROLE_ARN=hogehoge
+export HOSTED_ZONE_ID=hogehoge
+export DOMAIN_NAME=hogehoge
+export ACM_CERTIFICATE_ARN=hogehoge
+export ECR_IMAGE=hogehoge
+export ECR_ENDPOINT=hogehoge
+export ECR_REPOSITORY_NAME=hogehoge
+export ECS_CLUSTER_NAME=hogehoge
+export ECS_SERVICE_NAME=hogehoge
+export TASK_DEFINITION_FAMILY=hogehoge
+export CONTAINER_NAME=hogehoge
+```
+
+</details>
+
+<details>
+<summary> 3. IAMロールの作成</summary>
+
+- cloudformation-iam-role.ymlをデプロイ
+
+</details>
+
+<details>
+<summary> 4. cloudformation-templateをデプロイ</summary>
+
+- cloudformation-templateをデプロイ
+
+</details>
+
+<details>
+<summary> 5. cognitoをデプロイ</summary>
+
+- cloudformation-cognito.ymlをデプロイ
+
+</details>
+
+
+<details>
+<summary> 6. new-task-defを更新してPush</summary>
+
+- new-task-defの更新。特に環境変数に気をつけて。AWS上でも必要なシークレットを追加してね。
+
+</details>
 
 # 備考
+
+- 先にACMで証明書発行が必要
 
 
 # 参考

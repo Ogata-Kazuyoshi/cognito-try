@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for S3 bucket, CloudFront distribution with OAC, and WAF IP set
+Resources:
+
+  WAFIPSet:
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: ogata-cloudfront-ipset
+      Scope: CLOUDFRONT
+      IPAddressVersion: IPV4
+      Addresses:
+       - 13.114.22.14/32
+
+  WAFWebACL:
+   Type: AWS::WAFv2::WebACL
+   Properties:
+    Name: ogata-cloudfront-webacl
+    Scope: CLOUDFRONT
+    DefaultAction:
+     Block: {}
+    Rules:
+     - Name: AllowSpecificIP
+       Priority: 1
+       Action:
+         Allow: {}
+       Statement:
+         IPSetReferenceStatement:
+           Arn: !GetAtt WAFIPSet.Arn
+       VisibilityConfig:
+         SampledRequestsEnabled: true
+         CloudWatchMetricsEnabled: true
+         MetricName: AllowSpecificIPRule
+    VisibilityConfig:
+     SampledRequestsEnabled: true
+     CloudWatchMetricsEnabled: true
+     MetricName: ogata-cloudfront-webacl
+
+Outputs:
+  CloudFrontWAF:
+    Value: !GetAtt WAFWebACL.Arn # WAFのARNを CloudFrontWAF という論理名で出力して、CloudFrontから参照できるようにします

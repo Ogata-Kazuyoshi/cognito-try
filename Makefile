@@ -23,7 +23,6 @@ iac-role-update:
 	--parameters ParameterKey=GithubAccount,ParameterValue=$(GITHUB_ACCOUNT) \
 	             ParameterKey=GithubRepository,ParameterValue=$(GITHUB_REPOSITORY) \
 
-
 iac-deploy:
 	aws cloudformation create-stack --stack-name ogata-cloudformation-app \
 	--template-body file://cloudformation/cloudformation-template.yml \
@@ -39,7 +38,6 @@ iac-deploy:
 	             ParameterKey=HostedZoneId,ParameterValue=$(HOSTED_ZONE_ID) \
 	             ParameterKey=DomainName,ParameterValue=$(DOMAIN_NAME) \
 	             ParameterKey=ACMCertificateArn,ParameterValue=$(ACM_CERTIFICATE_ARN)
-
 
 iac-update:
 	aws cloudformation update-stack --stack-name ogata-cloudformation-app \
@@ -57,7 +55,6 @@ iac-update:
 	             ParameterKey=DomainName,ParameterValue=$(DOMAIN_NAME) \
 	             ParameterKey=ACMCertificateArn,ParameterValue=$(ACM_CERTIFICATE_ARN)
 
-
 iac-cognito-deploy:
 	aws cloudformation create-stack --stack-name ogata-cloudformation-cognito \
 	--template-body file://cloudformation/cloudformation-cognito.yml \
@@ -67,3 +64,29 @@ iac-cognito-update:
 	aws cloudformation update-stack --stack-name ogata-cloudformation-cognito \
 	--template-body file://cloudformation/cloudformation-cognito.yml \
 	--capabilities CAPABILITY_NAMED_IAM \
+
+iac-wafacl-deploy:
+	aws cloudformation create-stack --stack-name ogata-cloudformation-wafacl \
+	--template-body file://cloudformation/cloudformation-wafacl.yml \
+	--capabilities CAPABILITY_NAMED_IAM \
+	--region us-east-1
+
+iac-wafacl-update:
+	aws cloudformation update-stack --stack-name ogata-cloudformation-wafacl \
+	--template-body file://cloudformation/cloudformation-wafacl.yml \
+	--capabilities CAPABILITY_NAMED_IAM \
+	--region us-east-1
+
+iac-cloudfront-deploy:
+	aws cloudformation create-stack --stack-name ogata-cloudformation-cloudfront \
+	--template-body file://cloudformation/cloudformation-cloudfront.yml \
+	--capabilities CAPABILITY_NAMED_IAM \
+	--parameters ParameterKey=WAFWebACLArn,ParameterValue=$(WAF_ACL_ARN) \
+	--region ap-northeast-1
+
+iac-cloudfront-update:
+	aws cloudformation update-stack --stack-name ogata-cloudformation-cloudfront \
+	--template-body file://cloudformation/cloudformation-cloudfront.yml \
+	--capabilities CAPABILITY_NAMED_IAM \
+	--parameters ParameterKey=WAFWebACLArn,ParameterValue=$(WAF_ACL_ARN) \
+	--region ap-northeast-1

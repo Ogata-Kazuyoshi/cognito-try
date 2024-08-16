@@ -1,4 +1,4 @@
-# AWS-cloudFormation
+# AWS-COGNITO
 
 <details open="open">
 <summary>目次</summary>
@@ -151,10 +151,16 @@ export CONTAINER_NAME=hogehoge
 # 備考
 
 - 先にACMで証明書発行が必要
-- - name: Deploy to S3
-    run: |
-    aws s3 sync frontend/build s3://あなたのバケット名 --delete
-- aws s3 syncコマンドを使用して、ビルドされたファイルをS3バケットに同期します。--deleteオプションにより、S3バケット内の古いファイルが削除されます。
+- cognitoの認証画面でパスワードをリセットするには「「 E メール確認済み」が「はい」となっており「確認ステータス」が「確認済み」もしくは「未確認」となっているが必須」
+
+![](./assets/images/support1.png)
+![](./assets/images/support2.png)
+![](./assets/images/support3.png)
+
+- cognitoで新規User登録した際のresponseに入っているデータ
+
+![](./assets/images/cognito-response.png)
+
 
 
 

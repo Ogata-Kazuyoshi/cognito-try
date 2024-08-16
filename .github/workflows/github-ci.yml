@@ -1,43 +1,4 @@
-# name: Sync to CodeCommit
-
-# on:
-#   push:
-#     branches:
-#       - main # 監視するブランチを指定
-
-# permissions:
-#   id-token: write
-#   contents: read
-
-# jobs:
-#   sync:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Git clone the repository # リポジトリの内容をクローン。後続でアクセスできるようになる。 fetch-depth:0は完全なクローンを意味する
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-
-#       - name: configure aws credentials # 認証認可のための部分。role-to-assumeで認証後に引き受けるIAMロールが指定される
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-#           aws-region: ${{ vars.AWS_REGION }}
-
-#       - name: Configure git to use AWS CodeCommit credentials
-#         run: |
-#           git config --global credential.helper '!aws codecommit credential-helper $@'
-#           git config --global credential.UseHttpPath true
-
-#       - name: Add CodeCommit remote
-#         run: |
-#           git remote add codecommit https://git-codecommit.${{ vars.AWS_REGION }}.amazonaws.com/v1/repos/${{ vars.AWS_CODECOMMIT }}
-
-#       - name: push to CodeCommit
-#         run: |
-#           git push codecommit main
-
-name: Build and Deploy to ECS
+name: Build and Deploy
 
 on:
   push:
@@ -49,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-app:
     runs-on: ubuntu-latest
     steps:
       - name: Git clone the repository
@@ -74,8 +35,9 @@ jobs:
         run: |
           docker build --platform linux/amd64 -t $ECR_REGISTRY/${{ vars.AWS_ECR_REPOSITORY }}:$IMAGE_TAG -f Dockerfile .
           docker push $ECR_REGISTRY/${{ vars.AWS_ECR_REPOSITORY }}:$IMAGE_TAG
-  deploy:
-    needs: build
+
+  deploy-app:
+    needs: build-app
     runs-on: ubuntu-latest
     steps:
       - name: Git clone the repository
@@ -121,3 +83,88 @@ jobs:
          echo "Waiting for ECS service to stabilize..."
          aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME --region ${{ vars.AWS_REGION }}
          echo "ECS service is stable."
+
+  deploy-to-lambda:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Clean S3 bucket if exists
+        run: |
+          if aws s3 ls "s3://${{ vars.SAM_BUCKET_NAME }}" 2>&1 | grep -q 'NoSuchBucket'
+          then
+            echo "バケット ${{ vars.SAM_BUCKET_NAME }} は存在しません。クリーンアップをスキップします。"
+          else
+            echo "バケット ${{ vars.SAM_BUCKET_NAME }} が存在します。クリーンアップを実行します。"
+            aws s3 rm s3://${{ vars.SAM_BUCKET_NAME }} --recursive
+          fi
+
+      - name: Create S3 bucket if not exists
+        run: |
+          if ! aws s3 ls "s3://${{ vars.SAM_BUCKET_NAME }}" 2>&1 | grep -q 'NoSuchBucket'
+          then
+            echo "バケット ${{ vars.SAM_BUCKET_NAME }} は既に存在します。"
+          else
+            echo "バケット ${{ vars.SAM_BUCKET_NAME }} が存在しません。作成します。"
+            aws s3 mb s3://${{ vars.SAM_BUCKET_NAME }} --region ${{ vars.AWS_REGION }}
+          fi
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+      - name: SAM build
+        run: sam build
+        working-directory: ./lambda-register
+      - name: SAM deploy
+        run: sam deploy --stack-name temp-ogata-sam --s3-bucket ${{ vars.SAM_BUCKET_NAME }} --capabilities CAPABILITY_IAM --no-confirm-changeset --no-fail-on-empty-changeset
+        working-directory: ./lambda-register
+
+  build-and-deploy-cloudfront:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd cloudfront
+          npm ci
+
+      - name: Build cloudfront
+        run: |
+          cd cloudfront
+          npm run build
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync cloudfront/dist s3://${{ vars.AWS_S3_BACKET }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+  

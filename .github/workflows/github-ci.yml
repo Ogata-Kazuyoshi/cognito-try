@@ -85,6 +85,9 @@ jobs:
          echo "ECS service is stable."
 
   deploy-to-lambda:
+    needs:
+      - build-app
+      - deploy-app
     runs-on: ubuntu-latest
     steps:
       - name: Git clone the repository
@@ -133,6 +136,10 @@ jobs:
         working-directory: ./lambda-register
 
   build-and-deploy-cloudfront:
+    needs:
+      - build-app
+      - deploy-app
+      - deploy-to-lambda
     runs-on: ubuntu-latest
     steps:
       - name: Git clone the repository
@@ -155,6 +162,8 @@ jobs:
           npm ci
 
       - name: Build cloudfront
+        env:
+          VITE_APIGATEWAY: ${{ vars.PROD_APIGATEWAY_URL }}
         run: |
           cd cloudfront
           npm run build

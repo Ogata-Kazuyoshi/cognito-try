@@ -62,6 +62,8 @@ Resources:
             Path: /api/users
             Method: post
             RestApiId: !Ref ApiGatewayApi
+      Timeout: 15
+      MemorySize: 256
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

@@ -12,6 +12,7 @@ const USER_POOL_ID = process.env.USER_POOL_ID;
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        console.log('処理開始');
         // イベントボディの型を定義
         interface EventBody {
             userEmail: string;
@@ -60,9 +61,12 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
             };
         };
 
+        console.log('Cognitoコマンド作成');
         const command = new AdminCreateUserCommand(params);
+        console.log('Cognitoコマンド実行開始');
         const response = await cognitoClient.send<AdminCreateUserCommandOutput>(command);
 
+        console.log('Cognitoコマンド実行完了');
         const userId = response as AdminCreateUserResponse;
         return {
             statusCode: 200,

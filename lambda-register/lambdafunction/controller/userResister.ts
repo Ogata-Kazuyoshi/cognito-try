@@ -3,7 +3,7 @@ import {
     CognitoIdentityProviderClient,
     AdminCreateUserCommand,
     AdminCreateUserCommandInput,
-    AdminCreateUserCommandOutput,
+    AdminCreateUserCommandOutput, UsernameExistsException,
 } from '@aws-sdk/client-cognito-identity-provider';
 
 // @ts-ignore
@@ -82,15 +82,23 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         };
     } catch (err) {
         console.error('Error creating user:', err);
+        let statusCode = 500;
+        let message = 'ユーザー作成中にエラーが発生しました';
+
+        if (err instanceof UsernameExistsException) {
+            statusCode = 400;
+            message = 'ユーザーは既に存在します';
+        }
+
         return {
-            statusCode: 500,
+            statusCode,
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
                 'Access-Control-Allow-Methods': 'POST,OPTIONS',
             },
             body: JSON.stringify({
-                message: 'ユーザー作成中にエラーが発生しました',
+                message,
                 error: err instanceof Error ? err.message : 'Unknown error',
             }),
         };

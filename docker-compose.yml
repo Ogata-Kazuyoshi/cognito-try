@@ -13,6 +13,7 @@ services:
       - CLIENT_ID=${CLIENT_ID}
       - CLIENT_SECRET=${CLIENT_SECRET}
       - COGNITO_USERPOOL_ID=${COGNITO_USERPOOL_ID}
+      - REDIRECT_PATH=${REDIRECT_PATH}
     networks:
       - cognito-try-net
     command: java -jar app.jar
@@ -24,7 +25,7 @@ services:
       - '8085:8000'
     command: -jar DynamoDBLocal.jar -dbPath /data -sharedDb
     volumes:
-      - ./dynamodb_data_cognito:/data # 修正
+      - ./dynamodb_data_cognito:/data # ボリュームマウントができず、バイマウントにした。。。
     networks:
       - cognito-try-net
     restart: unless-stopped
@@ -33,7 +34,7 @@ services:
     container_name: dynamodb-admin
     image: aaronshaf/dynamodb-admin:latest
     environment:
-      - DYNAMO_ENDPOINT=http://dynamodb-local:8000 # 修正
+      - DYNAMO_ENDPOINT=http://dynamodb-local:8000
     ports:
       - 8001:8001
     depends_on:

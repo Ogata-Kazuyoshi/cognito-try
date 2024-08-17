@@ -161,6 +161,8 @@ export CONTAINER_NAME=hogehoge
 
 ![](./assets/images/cognito-response.png)
 
+- dockerでdynamodb-localを立ち上げる時になぜか、ボリュームマウントができなかったので、バイマウントで実施。そのためルート直下にdynamodbのメタデータ格納ディレクトリを作成
+
 
 
 

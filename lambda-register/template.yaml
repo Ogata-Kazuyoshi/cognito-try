@@ -54,7 +54,7 @@ Resources:
         Fn::Sub: 'arn:aws:iam::${AWS::AccountId}:role/ogata-lambdaExecutionRole'
       Environment:
         Variables:
-          USER_POOL_ID: ap-northeast-1_zv4L93UFg
+          USER_POOL_ID: ap-northeast-1_zgWAK6odx
       Events:
         userResister:
           Type: Api

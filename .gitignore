@@ -23,6 +23,8 @@ dist-ssr
 
 env.json
 
+dynamodb_data_cognito
+
 .DS_Store
 *.suo
 *.ntvs*

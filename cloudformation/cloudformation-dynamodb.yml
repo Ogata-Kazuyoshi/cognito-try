@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'DynamoDB table for ogata user management'
+
+Resources:
+  OgataUserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ogataUserTable
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5

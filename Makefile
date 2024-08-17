@@ -96,3 +96,15 @@ iac-cloudfront-update:
 	--capabilities CAPABILITY_NAMED_IAM \
 	--parameters ParameterKey=WAFWebACLArn,ParameterValue=$(WAF_ACL_ARN) \
 	--region ap-northeast-1
+
+iac-dynamodb-deploy:
+	aws cloudformation create-stack --stack-name ogata-cloudformation-dynamodb \
+	--template-body file://cloudformation/cloudformation-dynamodb.yml \
+	--capabilities CAPABILITY_NAMED_IAM \
+	--region ap-northeast-1
+
+iac-dynamodb-update:
+	aws cloudformation update-stack --stack-name ogata-cloudformation-dynamodb \
+	--template-body file://cloudformation/cloudformation-dynamodb.yml \
+	--capabilities CAPABILITY_NAMED_IAM \
+	--region ap-northeast-1

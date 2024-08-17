@@ -3,25 +3,39 @@ import {
     CognitoIdentityProviderClient,
     AdminCreateUserCommand,
     AdminCreateUserCommandInput,
-    AdminCreateUserCommandOutput, UsernameExistsException,
+    AdminCreateUserCommandOutput,
+    UsernameExistsException,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { DynamoDBClient, DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 
 // @ts-ignore
 const cognitoClient = new CognitoIdentityProviderClient({ region: 'ap-northeast-1' });
 const USER_POOL_ID = process.env.USER_POOL_ID;
 
+const clientConfig: DynamoDBClientConfig = process.env.AWS_SAM_LOCAL
+    ? {
+          region: 'ap-northeast-1',
+          endpoint: 'http://dynamodb-local:8000',
+          credentials: {
+              accessKeyId: 'dummy',
+              secretAccessKey: 'dummy',
+          },
+      }
+    : {};
+
+// @ts-ignore
+const client = new DynamoDBClient(clientConfig);
+const dynamo = DynamoDBDocumentClient.from(client);
+
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        console.log('処理開始');
-        // イベントボディの型を定義
         interface EventBody {
             userEmail: string;
         }
 
-        // イベントボディをパースし、型チェックを行う
         const body = JSON.parse(event.body || '{}') as EventBody;
 
-        // 型ガードを使用して、userEmailが存在することを確認
         if (!body.userEmail || typeof body.userEmail !== 'string') {
             throw new Error('Invalid or missing userEmail in request body');
         }
@@ -61,13 +75,19 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
             };
         };
 
-        console.log('Cognitoコマンド作成');
         const command = new AdminCreateUserCommand(params);
-        console.log('Cognitoコマンド実行開始');
         const response = await cognitoClient.send<AdminCreateUserCommandOutput>(command);
-
-        console.log('Cognitoコマンド実行完了');
         const userId = response as AdminCreateUserResponse;
+
+        const putItemParams = {
+            TableName: 'ogataUserTable',
+            Item: {
+                id: userId.User.Username,
+                email: userEmail,
+                date: new Date().toISOString(),
+            },
+        };
+        const data = await dynamo.send(new PutCommand(putItemParams));
         return {
             statusCode: 200,
             headers: {
@@ -76,8 +96,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
                 'Access-Control-Allow-Methods': 'POST,OPTIONS',
             },
             body: JSON.stringify({
-                message: `ユーザー ${userEmail} を作成し、招待メールを送信しました`,
+                message: `ユーザー ${userEmail} を作成し、招待メールを送信しました。DynamoDBへの登録も完了です`,
                 userId: userId.User?.Username,
+                data: data,
             }),
         };
     } catch (err) {

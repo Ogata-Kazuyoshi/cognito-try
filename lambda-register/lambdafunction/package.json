@@ -15,7 +15,9 @@
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.632.0",
     "aws-sdk": "^2.1676.0",
-    "esbuild": "^0.14.14"
+    "esbuild": "^0.14.14",
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.2.0",

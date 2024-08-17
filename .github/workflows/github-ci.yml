@@ -10,84 +10,85 @@ permissions:
   contents: read
 
 jobs:
-  build-app:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Git clone the repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build, tag, and push Docker image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: latest
-        run: |
-          docker build --platform linux/amd64 -t $ECR_REGISTRY/${{ vars.AWS_ECR_REPOSITORY }}:$IMAGE_TAG -f Dockerfile .
-          docker push $ECR_REGISTRY/${{ vars.AWS_ECR_REPOSITORY }}:$IMAGE_TAG
-
-  deploy-app:
-    needs: build-app
-    runs-on: ubuntu-latest
-    steps:
-      - name: Git clone the repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Register new task definition
-        id: task-def
-        run: |
-          set -e
-          echo "Updating task definition with new image URI..."
-          NEW_TASK_DEF=$(cat .github/workflows/new-task-def.json | jq --arg IMAGE_URI "${{ vars.AWS_ECR_DOMAIN }}/${{ vars.AWS_ECR_REPOSITORY }}:latest" \
-            --arg LOG_GROUP "/ecs/ogata-dummy-container" \
-            --arg LOG_STREAM_PREFIX "ecs" \
-            --arg EXECUTION_ROLE_ARN "${{ vars.AWS_EXISTING_ECS_TASK_ROLE_ARN }}" \
-            '.containerDefinitions[0].image=$IMAGE_URI | .containerDefinitions[0].logConfiguration.options["awslogs-group"]=$LOG_GROUP | .executionRoleArn=$EXECUTION_ROLE_ARN')
-          echo $NEW_TASK_DEF > new-task-def.json
-          echo "Registering new task definition..."
-          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json | jq -r '.taskDefinition.taskDefinitionArn')
-          echo "::set-output name=NEW_TASK_DEF_ARN::$NEW_TASK_DEF_ARN"
-          echo "New task definition registered successfully."
-          cat new-task-def.json  # デバッグ用に追加
-
-      - name: Deploy to ECS
-        env:
-          CLUSTER_NAME: ogata-cloudformation-cluster # ここをあなたのECSクラスター名に変更
-          SERVICE_NAME: ogata-cloudformation-service # ここをあなたのECSサービス名に変更
-        run: |
-          aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition ${{ steps.task-def.outputs.NEW_TASK_DEF_ARN }} --force-new-deployment --region ${{ vars.AWS_REGION }} --desired-count 1
-
-      - name: Wait for ECS service stability
-        env:
-         CLUSTER_NAME: ogata-cloudformation-cluster
-         SERVICE_NAME: ogata-cloudformation-service
-        run: |
-         echo "Waiting for ECS service to stabilize..."
-         aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME --region ${{ vars.AWS_REGION }}
-         echo "ECS service is stable."
+#  build-appとdeploy-appのアプリ自体はローカルで検証することにした。
+#  build-app:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Git clone the repository
+#        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+#          aws-region: ${{ vars.AWS_REGION }}
+#
+#      - name: Log in to Amazon ECR
+#        id: login-ecr
+#        uses: aws-actions/amazon-ecr-login@v1
+#
+#      - name: Build, tag, and push Docker image
+#        env:
+#          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#          IMAGE_TAG: latest
+#        run: |
+#          docker build --platform linux/amd64 -t $ECR_REGISTRY/${{ vars.AWS_ECR_REPOSITORY }}:$IMAGE_TAG -f Dockerfile .
+#          docker push $ECR_REGISTRY/${{ vars.AWS_ECR_REPOSITORY }}:$IMAGE_TAG
+#
+#  deploy-app:
+#    needs: build-app
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Git clone the repository
+#        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+#          aws-region: ${{ vars.AWS_REGION }}
+#
+#      - name: Register new task definition
+#        id: task-def
+#        run: |
+#          set -e
+#          echo "Updating task definition with new image URI..."
+#          NEW_TASK_DEF=$(cat .github/workflows/new-task-def.json | jq --arg IMAGE_URI "${{ vars.AWS_ECR_DOMAIN }}/${{ vars.AWS_ECR_REPOSITORY }}:latest" \
+#            --arg LOG_GROUP "/ecs/ogata-dummy-container" \
+#            --arg LOG_STREAM_PREFIX "ecs" \
+#            --arg EXECUTION_ROLE_ARN "${{ vars.AWS_EXISTING_ECS_TASK_ROLE_ARN }}" \
+#            '.containerDefinitions[0].image=$IMAGE_URI | .containerDefinitions[0].logConfiguration.options["awslogs-group"]=$LOG_GROUP | .executionRoleArn=$EXECUTION_ROLE_ARN')
+#          echo $NEW_TASK_DEF > new-task-def.json
+#          echo "Registering new task definition..."
+#          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json | jq -r '.taskDefinition.taskDefinitionArn')
+#          echo "::set-output name=NEW_TASK_DEF_ARN::$NEW_TASK_DEF_ARN"
+#          echo "New task definition registered successfully."
+#          cat new-task-def.json  # デバッグ用に追加
+#
+#      - name: Deploy to ECS
+#        env:
+#          CLUSTER_NAME: ogata-cloudformation-cluster # ここをあなたのECSクラスター名に変更
+#          SERVICE_NAME: ogata-cloudformation-service # ここをあなたのECSサービス名に変更
+#        run: |
+#          aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition ${{ steps.task-def.outputs.NEW_TASK_DEF_ARN }} --force-new-deployment --region ${{ vars.AWS_REGION }} --desired-count 1
+#
+#      - name: Wait for ECS service stability
+#        env:
+#         CLUSTER_NAME: ogata-cloudformation-cluster
+#         SERVICE_NAME: ogata-cloudformation-service
+#        run: |
+#         echo "Waiting for ECS service to stabilize..."
+#         aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME --region ${{ vars.AWS_REGION }}
+#         echo "ECS service is stable."
 
   deploy-to-lambda:
-    needs:
-      - build-app
-      - deploy-app
+#    needs:
+#      - build-app
+#      - deploy-app
     runs-on: ubuntu-latest
     steps:
       - name: Git clone the repository
@@ -132,13 +133,13 @@ jobs:
         run: sam build
         working-directory: ./lambda-register
       - name: SAM deploy
-        run: sam deploy --stack-name temp-ogata-sam --s3-bucket ${{ vars.SAM_BUCKET_NAME }} --capabilities CAPABILITY_IAM --no-confirm-changeset --no-fail-on-empty-changeset
+        run: sam deploy --stack-name ogata-sam-lambda --s3-bucket ${{ vars.SAM_BUCKET_NAME }} --capabilities CAPABILITY_IAM --no-confirm-changeset --no-fail-on-empty-changeset
         working-directory: ./lambda-register
 
   build-and-deploy-cloudfront:
     needs:
-      - build-app
-      - deploy-app
+#      - build-app
+#      - deploy-app
       - deploy-to-lambda
     runs-on: ubuntu-latest
     steps:

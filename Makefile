@@ -15,6 +15,7 @@ iac-role-deploy:
 	--capabilities CAPABILITY_NAMED_IAM \
 	--parameters ParameterKey=GithubAccount,ParameterValue=$(GITHUB_ACCOUNT) \
 	             ParameterKey=GithubRepository,ParameterValue=$(GITHUB_REPOSITORY) \
+	--region ap-northeast-1
 
 iac-role-update:
 	aws cloudformation update-stack --stack-name ogata-cloudformation-iam-role \
@@ -22,6 +23,7 @@ iac-role-update:
 	--capabilities CAPABILITY_NAMED_IAM \
 	--parameters ParameterKey=GithubAccount,ParameterValue=$(GITHUB_ACCOUNT) \
 	             ParameterKey=GithubRepository,ParameterValue=$(GITHUB_REPOSITORY) \
+	--region ap-northeast-1
 
 iac-deploy:
 	aws cloudformation create-stack --stack-name ogata-cloudformation-app \
@@ -37,7 +39,8 @@ iac-deploy:
 	             ParameterKey=ECRRepositoryName,ParameterValue=$(ECR_REPOSITORY_NAME) \
 	             ParameterKey=HostedZoneId,ParameterValue=$(HOSTED_ZONE_ID) \
 	             ParameterKey=DomainName,ParameterValue=$(DOMAIN_NAME) \
-	             ParameterKey=ACMCertificateArn,ParameterValue=$(ACM_CERTIFICATE_ARN)
+	             ParameterKey=ACMCertificateArn,ParameterValue=$(ACM_CERTIFICATE_ARN) \
+	--region ap-northeast-1
 
 iac-update:
 	aws cloudformation update-stack --stack-name ogata-cloudformation-app \
@@ -53,17 +56,20 @@ iac-update:
 	             ParameterKey=ECRRepositoryName,ParameterValue=$(ECR_REPOSITORY_NAME) \
 	             ParameterKey=HostedZoneId,ParameterValue=$(HOSTED_ZONE_ID) \
 	             ParameterKey=DomainName,ParameterValue=$(DOMAIN_NAME) \
-	             ParameterKey=ACMCertificateArn,ParameterValue=$(ACM_CERTIFICATE_ARN)
+	             ParameterKey=ACMCertificateArn,ParameterValue=$(ACM_CERTIFICATE_ARN) \
+	--region ap-northeast-1
 
 iac-cognito-deploy:
 	aws cloudformation create-stack --stack-name ogata-cloudformation-cognito \
 	--template-body file://cloudformation/cloudformation-cognito.yml \
 	--capabilities CAPABILITY_NAMED_IAM \
+	--region ap-northeast-1
 
 iac-cognito-update:
 	aws cloudformation update-stack --stack-name ogata-cloudformation-cognito \
 	--template-body file://cloudformation/cloudformation-cognito.yml \
 	--capabilities CAPABILITY_NAMED_IAM \
+	--region ap-northeast-1
 
 iac-wafacl-deploy:
 	aws cloudformation create-stack --stack-name ogata-cloudformation-wafacl \

@@ -2,39 +2,30 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda';
 import {
     AdminCreateUserCommand,
     AdminCreateUserCommandInput,
-    AdminCreateUserCommandOutput,
-    CognitoIdentityProviderClient,
     UsernameExistsException,
 } from '@aws-sdk/client-cognito-identity-provider';
 import {PutCommand} from '@aws-sdk/lib-dynamodb';
 import {dynamo, headers} from "./dynamodbConfig";
-
-// @ts-ignore
-const cognitoClient = new CognitoIdentityProviderClient({ region: 'ap-northeast-1' });
-const USER_POOL_ID = process.env.USER_POOL_ID;
+import {AdminCreateUserResponse, cognitoClient, EventBody, userPoolId} from "./cognitoConfig";
 
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        interface EventBody {
-            userEmail: string;
-        }
-
-        const body = JSON.parse(event.body || '{}') as EventBody;
+        const body: EventBody = JSON.parse(event.body || '{}') ;
 
         if (!body.userEmail || typeof body.userEmail !== 'string') {
             throw new Error('Invalid or missing userEmail in request body');
         }
         const userEmail = body.userEmail;
 
-        if (!USER_POOL_ID) {
+        if (!userPoolId) {
             throw new Error('USER_POOL_ID is not set');
         } else {
-            console.log({ USER_POOL_ID });
+            console.log({ USER_POOL_ID: userPoolId });
         }
 
         const params: AdminCreateUserCommandInput = {
-            UserPoolId: USER_POOL_ID,
+            UserPoolId: userPoolId,
             Username: userEmail,
             UserAttributes: [
                 {
@@ -50,19 +41,8 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
             ForceAliasCreation: false,
         };
 
-        type AdminCreateUserResponse = {
-            User: {
-                Username: string;
-                UserStatus: string;
-                Enabled: boolean;
-                UserCreateDate: Date;
-                UserLastModifiedDate: Date;
-                Attributes: { Name: string; Value: string }[];
-            };
-        };
-
         const command = new AdminCreateUserCommand(params);
-        const response = await cognitoClient.send<AdminCreateUserCommandOutput>(command);
+        const response = await cognitoClient.send<AdminCreateUserCommand>(command);
         const userId = response as AdminCreateUserResponse;
 
         const putItemParams = {

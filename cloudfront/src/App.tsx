@@ -20,6 +20,11 @@ function App() {
         console.log({res})
     }
 
+    const deleteHandler = async (id: string) => {
+        const res = await axios.delete(`${apiGateway}/api/users/${id}`).then(elm => elm.data)
+        console.log({res})
+    }
+
     const getAllUsers = async () => {
         const res = await axios.get<User[]>(`${apiGateway}/api/users`).then(elm => elm.data)
         setUsersList(res)
@@ -45,17 +50,20 @@ function App() {
           <br/>
           <table >
               <thead>
-                  <tr>
-                      <th>
-                          id
-                      </th>
-                      <th >
-                         email
-                      </th>
-                      <th>
-                         date
-                      </th>
-                  </tr>
+              <tr>
+                  <th>
+                      id
+                  </th>
+                  <th>
+                      email
+                  </th>
+                  <th>
+                      date
+                  </th>
+                  <th>
+                      削除ボタン
+                  </th>
+              </tr>
               </thead>
               <tbody>
               {usersList.map(user => (
@@ -63,6 +71,11 @@ function App() {
                       <td>{user.id}</td>
                       <td>{user.email}</td>
                       <td>{user.date}</td>
+                      <td>
+                          <button onClick={() => {
+                              deleteHandler(user.id)
+                          }}>削除</button>
+                      </td>
                   </tr>
               ))}
               </tbody>

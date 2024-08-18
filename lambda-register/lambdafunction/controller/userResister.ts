@@ -1,32 +1,18 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda';
 import {
-    CognitoIdentityProviderClient,
     AdminCreateUserCommand,
     AdminCreateUserCommandInput,
     AdminCreateUserCommandOutput,
+    CognitoIdentityProviderClient,
     UsernameExistsException,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { DynamoDBClient, DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import {PutCommand} from '@aws-sdk/lib-dynamodb';
+import {dynamo, headers} from "./dynamodbConfig";
 
 // @ts-ignore
 const cognitoClient = new CognitoIdentityProviderClient({ region: 'ap-northeast-1' });
 const USER_POOL_ID = process.env.USER_POOL_ID;
 
-const clientConfig: DynamoDBClientConfig = process.env.AWS_SAM_LOCAL
-    ? {
-          region: 'ap-northeast-1',
-          endpoint: 'http://dynamodb-local:8000',
-          credentials: {
-              accessKeyId: 'dummy',
-              secretAccessKey: 'dummy',
-          },
-      }
-    : {};
-
-// @ts-ignore
-const client = new DynamoDBClient(clientConfig);
-const dynamo = DynamoDBDocumentClient.from(client);
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
@@ -90,11 +76,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         const data = await dynamo.send(new PutCommand(putItemParams));
         return {
             statusCode: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                'Access-Control-Allow-Methods': 'POST,OPTIONS',
-            },
+            headers: headers,
             body: JSON.stringify({
                 message: `ユーザー ${userEmail} を作成し、招待メールを送信しました。DynamoDBへの登録も完了です`,
                 userId: userId.User?.Username,

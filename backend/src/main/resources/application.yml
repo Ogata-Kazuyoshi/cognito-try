@@ -19,10 +19,7 @@ spring:
 
 environments:
   after-auth-redirect-url: ${REDIRECT_PATH}
-#  after-auth-redirect-url: "http://localhost:5173/"
-
   login-error-redirect-url: ${REDIRECT_PATH}
-#  login-error-redirect-url: http://localhost:5173/"
 
 logging:
   level:

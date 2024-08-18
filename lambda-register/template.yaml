@@ -21,7 +21,7 @@ Resources:
     Properties:
       StageName: Prod
       Cors:
-        AllowMethods: "'POST, OPTIONS'"
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
       Auth:
@@ -52,9 +52,6 @@ Resources:
         - x86_64
       Role:
         Fn::Sub: 'arn:aws:iam::${AWS::AccountId}:role/ogata-lambdaExecutionRole'
-      Environment:
-        Variables:
-          USER_POOL_ID: ap-northeast-1_zgWAK6odx
       Events:
         userResister:
           Type: Api
@@ -72,6 +69,37 @@ Resources:
         Sourcemap: true
         EntryPoints:
           - controller/userResister.ts
+
+  LambdaUserAllGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          USER_POOL_ID: ${USER_POOL_ID}
+      CodeUri: lambdafunction/
+      Handler: userAllGet.lambdaHandler
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      Role:
+        Fn::Sub: 'arn:aws:iam::${AWS::AccountId}:role/ogata-lambdaExecutionRole'
+      Events:
+        userAllGet:
+          Type: Api
+          Properties:
+            Path: /api/users
+            Method: get
+            RestApiId: !Ref ApiGatewayApi
+      Timeout: 15
+      MemorySize: 256
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: 'es2020'
+        Sourcemap: true
+        EntryPoints:
+          - controller/userAllGet.ts
 #Outputs:
 #  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
 #  # Find out more about other implicit resources you can reference within SAM
